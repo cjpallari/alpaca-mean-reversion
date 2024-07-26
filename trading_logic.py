@@ -6,8 +6,6 @@ from spot import *
 from account_stuff import *
 from mail import *
 from twit import *
-
-# from twit import *
 import time
 
 
@@ -138,6 +136,8 @@ def buy_or_sell():  # This function determines whether to buy or sell a stock ba
             sell_target = purchase_info[symbol]["latest_trade"]
             if latest_trade > sell_target * target_gain:
                 sell(symbol)
+                del purchase_info[symbol]
+                tweet(f"Sold {symbol} at {latest_trade}")
         else:  # If the latest trade is within the average plus or minus the standard deviation, hold the stock
             if symbol in purchase_info:
                 print(f"Hold {symbol} at {latest_trade}")
@@ -153,7 +153,7 @@ def main():
             time.sleep(60)
         else:
             buy_or_sell()
-            time.sleep(300)
+            time.sleep(3600)
 
 
 if __name__ == "__main__":
@@ -162,3 +162,4 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         print("Exiting...")
         exit()
+
