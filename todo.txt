@@ -1,0 +1,22 @@
+[x] Get 1.5 standard deviations above and below
+[x] if below, then buy
+[x] if above, then sell
+[x] fix start_time var in history.py to work with the url
+[x] add actual buy/sell functionality
+[x] get twitter functionality working
+
+[x] figure out how to handle repeat buy orders
+i think the way to handle repeat buy orders is to add the symbol to a list after buying, and make it so if the list
+    contains that symbol it cannot be bought again until it is sold. if sold then remove symbol from the list
+    *should think more about this*
+
+[x]another option is to create a dictionary with the key being the symbol and the value being a timestamp of when it was
+    purchased. create a variable called MIN_TIME_BETWEEN_BUYS and make a check to see if enough time has passed.
+    ***this is probably the best solution so far***
+
+
+[] eventually hook up purchase_info to a database or external file so it persists if the program ends.
+    not currently a big deal
+
+[] rethink how i want to handle target gain. currently shooting for 5% gain from buy price, potentially
+    a better alternative
