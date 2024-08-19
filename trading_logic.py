@@ -1,6 +1,4 @@
 import requests
-import datetime
-import urllib.parse
 import statistics
 from spot import *
 from account_stuff import *
@@ -142,7 +140,7 @@ def buy_or_sell():  # This function determines whether to buy or sell a stock ba
             if symbol in purchase_info:
                 print(f"Hold {symbol} at {latest_trade}")
             else:
-                print(f"Not advisable to buy {symbol} yet")
+                print(f"Price is not far enough from the mean to buy {symbol}")
     print(purchase_info)
 
 
