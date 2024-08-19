@@ -1,4 +1,5 @@
 from account_stuff import *
+import datetime
 
 watchlist = {
     "AAPL",  # Apple Inc.
@@ -81,8 +82,6 @@ watchlist = {
 }
 
 
-
-#symbol_and_avg = {}  #I think i can delete this
 purchase_info = {}
 qty = 5
 today = date.today()
@@ -90,8 +89,6 @@ start_date = today - timedelta(days=7)
 start_date = str(start_date)
 buying_power = float(get_account_balance())
 target_gain = 1.05
-#now = datetime.datetime.now().strftime('%Y-%m-%d %H%M%S')
-#purchase_time = datetime.datetime.now().strptime(now, '%Y-%m-%d %H%M%S')
 
 now = datetime.datetime.now()
 purchase_time = datetime.datetime.now()
