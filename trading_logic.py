@@ -1,6 +1,7 @@
 import requests
 import statistics
 from spot import *
+from config import *
 from account_stuff import *
 from mail import *
 from twit import *
@@ -123,8 +124,13 @@ def buy_or_sell():  # This function determines whether to buy or sell a stock ba
                         "latest_trade": latest_trade,
                         "purchase_time": purchase_time,
                     }
+                    summary[symbol] = {
+                        "latest_trade": latest_trade,
+                        "purchase_time": purchase_time,
+                        "order_type": "buy"
+                    }
                     print(purchase_info)
-                    tweet(message)
+                    #tweet(message)
                     # createMessage('buy', symbol, latest_trade)
                 else:
                     print("Not enough time has passed between purchases")
@@ -135,7 +141,12 @@ def buy_or_sell():  # This function determines whether to buy or sell a stock ba
             if latest_trade > sell_target * target_gain:
                 sell(symbol)
                 del purchase_info[symbol]
-                tweet(f"Sold {symbol} at {latest_trade}")
+                summary[symbol] = {
+                        "latest_trade": latest_trade,
+                        "purchase_time": purchase_time,
+                        "order_type": "sell"
+                    }
+                #tweet(f"Sold {symbol} at {latest_trade}")
         else:  # If the latest trade is within the average plus or minus the standard deviation, hold the stock
             if symbol in purchase_info:
                 print(f"Hold {symbol} at {latest_trade}")
@@ -143,13 +154,46 @@ def buy_or_sell():  # This function determines whether to buy or sell a stock ba
                 print(f"Price is not far enough from the mean to buy {symbol}")
     print(purchase_info)
 
+def generate_summary(summary):
+    message = "Summary of transactions: \n"
+    message += "\nPurchases: \n"
+    purchases = [t for t in summary.items() if t[1]["order_type"] == "buy"]
+    if purchases:
+        for symbol, data in purchases:
+            message += (
+                f"Bought {symbol} at: ${data['latest_trade']:.2f} "
+                f"order placed at: {data['purchase_time'].strftime('%Y-%m-%d %H:%M:%S')}\n"
+            )
+    else:
+        message += "No purchases today\n"
+    
+    # Add sales
+    message += "\nSales:\n"
+    sales = [t for t in summary.items() if t[1]["order_type"] == "sell"]
+    if sales:
+        for symbol, data in sales:
+            message += (
+                f"Sold {symbol} at: ${data['latest_trade']:.2f} "
+                f"order placed at: {data['purchase_time'].strftime('%Y-%m-%d %H:%M:')}\n"
+            )
+    else:
+        message += "No sales today\n"
+    
+    tweet(message)
+    summary.clear()
+
 
 def main():
+    last_summary_date = None
     while True:
+        time = datetime.datetime.now()
         if is_market_open():
             buy_or_sell()
             time.sleep(60)
         else:
+            if time.strftime("%H:%M") == "17:00" and time.date() != last_summary_date:
+                generate_summary(summary)
+                last_summary_date = time.date()
             buy_or_sell()
             time.sleep(3600)
 

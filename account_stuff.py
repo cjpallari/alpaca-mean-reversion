@@ -1,7 +1,7 @@
 import requests, json
 from datetime import *
-from config import *
 from spot import *
+from config import *
 import datetime
 import pytz
 
@@ -42,12 +42,16 @@ def sell(symbol):  # This function sells a stock
     url = "https://paper-api.alpaca.markets/v2/orders"
     qty = get_num_of_shares(symbol)
 
+    if qty <= 0:
+        print(f"No shares available to sell for {symbol}")
+        return None
+
     payload = {
         "side": "sell",
         "type": "market",
         "time_in_force": "gtc",
         "symbol": symbol,
-        "qty": qty,
+        "qty": str(qty),
     }
     response = requests.post(url, json=payload, headers=headers)
     data = response.json()
@@ -69,15 +73,13 @@ def get_num_of_shares(symbol):
         for list in data:
             if list["symbol"] == symbol:
                 # print(f"Symbol: {symbol}, Num of shares: {list['qty']}")
-                return list["qty"]
-            else:
-                return 0
+                return int(float(list["qty"]))
+        return 0
     else:
         print(
             f"Failed to retrieve number of shares for {symbol}, reason: {data['message']}"
         )
-        return None
-    return None
+        return 0
 
 
 def is_market_open():
@@ -105,4 +107,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

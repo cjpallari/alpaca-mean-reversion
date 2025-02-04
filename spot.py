@@ -83,6 +83,7 @@ watchlist = {
 
 
 purchase_info = {}
+summary = {}
 qty = 5
 today = date.today()
 start_date = today - timedelta(days=7)

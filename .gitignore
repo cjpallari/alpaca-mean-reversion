@@ -2,3 +2,5 @@ config.py
 
 Misc/
 
+__pycache__/
+
