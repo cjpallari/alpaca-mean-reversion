@@ -189,9 +189,9 @@ def main():
         time = datetime.datetime.now()
         if is_market_open():
             buy_or_sell()
-            time.sleep(60)
+            time.sleep(120)
         else:
-            if time.strftime("%H:%M") == "17:00" and time.date() != last_summary_date:
+            if time.strftime("%H") == "17" and time.date() != last_summary_date:
                 generate_summary(summary)
                 last_summary_date = time.date()
             buy_or_sell()
