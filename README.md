@@ -1,10 +1,35 @@
-# Mean Reversion Trading Bot
+📈 Mean Reversion Trading Bot
+A fully automated trading bot built in Python that utilizes a mean reversion strategy to place real-time equity trades using the Alpaca API. Designed for 24/7 operation on a Google Cloud VM, with persistent session management via tmux.
 
-## Description
+⚙️ Features
+💹 Executes trades based on mean reversion indicators
 
-- Trading bot made with Alpaca's Trading API, employing a mean reversion strategy.
+🔁 Runs continuously with scheduled summary generation
 
-## Features
+☁️ Deployed on Google Cloud with tmux for persistent uptime
 
-- Automated trading based on mean reversion
-- Real-time data analysis using Alpaca Trading API
+🔗 Integrates with Alpaca's API for order execution and market data
+
+✅ Logs trade actions and account data for monitoring and debugging
+
+🧠 Modular design (trading logic, account, spot pricing, notifications, etc.)
+
+🛠️ Tech Stack
+Python
+
+Alpaca API
+
+Google Cloud Platform (GCP)
+
+tmux (session persistence)
+
+Requests, JSON, Datetime, and other standard libraries
+
+📁 File Overview
+File	Description
+trading_logic.py	Core strategy logic (mean reversion) and trade execution
+account_stuff.py	Handles account details and positions
+spot.py	Fetches current prices for specified assets
+mail.py	Optional email notification logic
+twit.py	(Optional) Twitter integration
+todo.txt	Project planning and ideas
