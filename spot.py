@@ -1,4 +1,5 @@
 from account_stuff import *
+from config import API_KEY, SECRET_KEY
 import datetime
 
 watchlist = {
@@ -22,7 +23,6 @@ watchlist = {
     "SHOP",  # Shopify Inc.
     "NFLX",  # Netflix Inc.
     "PYPL",  # PayPal Holdings Inc.
-    "SQ",  # Block Inc. (formerly Square)
     "UBER",  # Uber Technologies Inc.
     "LYFT",  # Lyft Inc.
     "BABA",  # Alibaba Group Holding Limited
@@ -46,15 +46,12 @@ watchlist = {
     "KLAC",  # KLA Corporation
     "LRCX",  # Lam Research Corporation
     "WDAY",  # Workday Inc.
-    "ETHUSD",  # Ethereum
     "BCH",  # Bitcoin Cash
     "LTC",  # Litecoin
-    "DOGEUSD",  # Dogecoin
     "LINK",  # Chainlink
     "EOS",  # EOS.IO
     "TRX",  # TRON
     "VET",  # VeChain
-    "UNIUSD",  # Uniswap
     "SOL",  # Solana
     "ATOM",  # Cosmos
     "BYND",  # Beyond Meat Inc.
@@ -68,7 +65,6 @@ watchlist = {
     "U",  # Unity Software Inc.
     "PINS",  # Pinterest Inc.
     "DDOG",  # Datadog Inc.
-    "DOTUSD",  # Not sure what is is
     "NKLA",  # Nikola Corporation
     "PLTR",  # Palantir Technologies Inc.
     "LCID",  # Lucid Group Inc.
@@ -88,7 +84,7 @@ qty = 5
 today = date.today()
 start_date = today - timedelta(days=7)
 start_date = str(start_date)
-buying_power = float(get_account_balance())
+# buying_power = float(get_buying_power())
 target_gain = 1.05
 
 now = datetime.datetime.now()

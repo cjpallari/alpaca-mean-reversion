@@ -9,6 +9,7 @@ import time
 import datetime
 
 
+# eth, doge, sq, dotusd,
 class AlpacaAPI:
     def __init__(self, headers):
         self.headers = headers
@@ -76,21 +77,15 @@ class TradingStrategy:
         watchlist,
         purchase_info,
         target_gain,
-        buying_power,
         start_date,
-        now,
         min_seconds_between_purchases,
-        purchase_time,
         summary,
     ):
         self.watchlist = watchlist
         self.purchase_info = purchase_info
         self.target_gain = target_gain
-        self.buying_power = buying_power
         self.start_date = start_date
-        self.now = now
         self.min_seconds_between_purchases = min_seconds_between_purchases
-        self.purchase_time = purchase_time
         self.summary = summary
         self.api = AlpacaAPI(headers)
 
@@ -107,22 +102,16 @@ class MeanReversion(TradingStrategy):
         watchlist,
         purchase_info,
         target_gain,
-        buying_power,
         start_date,
-        now,
         min_seconds_between_purchases,
-        purchase_time,
         summary,
     ):
         super().__init__(
             watchlist,
             purchase_info,
             target_gain,
-            buying_power,
             start_date,
-            now,
             min_seconds_between_purchases,
-            purchase_time,
             summary,
         )
         self.headers = headers
@@ -130,6 +119,7 @@ class MeanReversion(TradingStrategy):
     def buy_or_sell(
         self,
     ):  # This function determines whether to buy or sell a stock based on the average and standard deviation of the closing prices
+        buying_power = get_buying_power()
         for symbol in self.watchlist:
             num_of_shares = get_num_of_shares(symbol)
             average, stdev = self.api.get_historical_data(
@@ -146,28 +136,28 @@ class MeanReversion(TradingStrategy):
                 latest_trade < average - stdev
             ):  # If the latest trade is less than the average minus the standard deviation, buy the stock
                 message = f"Purchased 5 shares of {symbol} at {latest_trade}"
-                if latest_trade * 5 < self.buying_power:
+                if latest_trade * 5 < buying_power:
                     if (
                         symbol not in self.purchase_info
                         or (
-                            self.now - self.purchase_info[symbol]["purchase_time"]
+                            datetime.datetime.now()
+                            - self.purchase_info[symbol]["purchase_time"]
                         ).total_seconds()
                         > self.min_seconds_between_purchases
                     ):
                         print(f"Buy {symbol} at {latest_trade}")
                         buy(symbol)
+                        now = datetime.datetime.now()
                         self.purchase_info[symbol] = {
                             "latest_trade": latest_trade,
-                            "purchase_time": self.purchase_time,
+                            "purchase_time": now,
                         }
                         self.summary[symbol] = {
                             "latest_trade": latest_trade,
-                            "purchase_time": self.purchase_time,
+                            "purchase_time": now,
                             "order_type": "buy",
                         }
                         print(self.purchase_info)
-                        # tweet(message)
-                        # createMessage('buy', symbol, latest_trade)
                     else:
                         print("Not enough time has passed between purchases")
                 else:
@@ -176,13 +166,13 @@ class MeanReversion(TradingStrategy):
                 sell_target = self.purchase_info[symbol]["latest_trade"]
                 if latest_trade > sell_target * self.target_gain:
                     sell(symbol)
+                    sell_time = datetime.datetime.now()
                     del self.purchase_info[symbol]
                     self.summary[symbol] = {
                         "latest_trade": latest_trade,
-                        "purchase_time": self.purchase_time,
+                        "purchase_time": sell_time,
                         "order_type": "sell",
                     }
-                    # tweet(f"Sold {symbol} at {latest_trade}")
             else:  # If the latest trade is within the average plus or minus the standard deviation, hold the stock
                 if symbol in self.purchase_info:
                     print(f"Hold {symbol} at {latest_trade}")
@@ -210,7 +200,7 @@ class MeanReversion(TradingStrategy):
             for symbol, data in sales:
                 message += (
                     f"Sold {symbol} at: ${data['latest_trade']:.2f} "
-                    f"order placed at: {data['purchase_time'].strftime('%Y-%m-%d %H:%M:')}\n"
+                    f"order placed at: {data['purchase_time'].strftime('%Y-%m-%d %H:%M:%S')}\n"
                 )
         else:
             message += "No sales today\n"
@@ -225,32 +215,33 @@ def main():
         watchlist,
         purchase_info,
         target_gain,
-        buying_power,
         start_date,
-        now,
         min_seconds_between_purchases,
-        purchase_time,
         summary,
     )
     while True:
-        current_time = datetime.datetime.now()
-        if is_market_open():
-            strategy.buy_or_sell()
-            time.sleep(120)
-        else:
-            if (
-                current_time.strftime("%H") == "17"
-                and current_time.date() != last_summary_date
-            ):
-                strategy.generate_summary()
-                last_summary_date = current_time.date()
-            strategy.buy_or_sell()
-            time.sleep(3600)
+        try:
+            current_time = datetime.datetime.now()
+            if is_market_open():
+                strategy.buy_or_sell()
+                time.sleep(120)
+            else:
+                if current_time.strftime("%H") >= "16" and (
+                    last_summary_date is None
+                    or current_time.date() != last_summary_date.date()
+                ):
+                    strategy.generate_summary()
+                    last_summary_date = current_time.date()
+                strategy.buy_or_sell()
+                time.sleep(3600)
+        except Exception as e:
+            print(f"Error in trading loop: {e}")
+            time.sleep(60)  # wait before retrying
 
 
 if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
-        print("Exiting...")
+        print(" Exiting...")
         exit()

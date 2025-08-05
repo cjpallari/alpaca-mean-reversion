@@ -1,5 +1,6 @@
 import requests, json
 from datetime import *
+from trading_logic import AlpacaAPI
 from spot import *
 from config import *
 import datetime
@@ -16,24 +17,40 @@ headers = {
 }
 
 
-def get_account_balance():
+def get_buying_power():
     r = requests.get(ACCOUNT_URL, headers=headers)
     data = r.json()
-    return data["buying_power"]
+    print(data)
+    return float(data["buying_power"])
 
 
 def buy(symbol):  # This function buys a stock
+    alpaca = AlpacaAPI(headers=headers)
     url = "https://paper-api.alpaca.markets/v2/orders"
+    buying_power = get_buying_power()
+    allocation = buying_power * 0.05
+    latest_trade = alpaca.get_latest_trade(symbol)
+
+    if latest_trade is None or latest_trade <= 0:
+        print(f"Invalid trade price for {symbol}: {latest_trade}")
+        return
+
+    shares_to_buy = round((allocation / latest_trade), 6)
+
+    if shares_to_buy < 0.0001:
+        print("Out of funds")
+        return
 
     payload = {
         "side": "buy",
         "type": "market",
         "time_in_force": "gtc",  # This is the time in force for the order - good till cancelled
         "symbol": symbol,
-        "qty": "5",  # This is the number of shares to buy
+        "qty": shares_to_buy,  # This is the number of shares to buy
     }
     response = requests.post(url, json=payload, headers=headers)
     data = response.json()
+    print(data)
 
     return data
 
@@ -68,6 +85,7 @@ def get_num_of_shares(symbol):
 
     response = requests.get(url, headers=headers)
     data = response.json()
+    print(data)
 
     if response.status_code == 200:
         for list in data:
@@ -101,7 +119,6 @@ def is_market_open():
 
 
 def main():
-    # get_account_balance()
     return BASE_DATA_URL
 
 

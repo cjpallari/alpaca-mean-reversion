@@ -4,3 +4,46 @@ Misc/
 
 __pycache__/
 
+# Byte-compiled files
+*.py[cod]
+*$py.class
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Environment files
+.env
+*.env
+*.env.*
+
+# Virtual environments
+venv/
+.venv/
+
+# macOS files
+.DS_Store
+
+# VSCode project settings
+.vscode/
+
+# Logs
+*.log
+
+# Test output
+htmlcov/
+coverage.xml
+*.cover
+.cache/
+
+# MyPy and Pyright type check output
+.mypy_cache/
+.pyright/
+
+# Bandit security scan reports
+bandit.json
+
+# Build/Distribution
+build/
+dist/
+*.egg-info/
+
