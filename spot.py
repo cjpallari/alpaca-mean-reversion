@@ -1,5 +1,6 @@
 from account_stuff import *
 from config import API_KEY, SECRET_KEY
+import pandas as pd
 import datetime
 
 watchlist = {
@@ -81,8 +82,8 @@ watchlist = {
 purchase_info = {}
 summary = {}
 qty = 5
-today = date.today()
-start_date = today - timedelta(days=7)
+today = datetime.date.today()
+start_date = today - pd.tseries.offsets.BDay(10)
 start_date = str(start_date)
 # buying_power = float(get_buying_power())
 target_gain = 1.05

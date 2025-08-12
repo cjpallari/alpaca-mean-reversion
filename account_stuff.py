@@ -1,6 +1,7 @@
 import requests, json
-from datetime import *
-from trading_logic import AlpacaAPI
+import datetime
+import time
+from alpaca_api import AlpacaAPI
 from spot import *
 from config import *
 import datetime
@@ -20,7 +21,6 @@ headers = {
 def get_buying_power():
     r = requests.get(ACCOUNT_URL, headers=headers)
     data = r.json()
-    print(data)
     return float(data["buying_power"])
 
 
@@ -44,40 +44,52 @@ def buy(symbol):  # This function buys a stock
     payload = {
         "side": "buy",
         "type": "market",
-        "time_in_force": "gtc",  # This is the time in force for the order - good till cancelled
+        "time_in_force": "day",  # This is the time in force for the order - good till cancelled
         "symbol": symbol,
-        "qty": shares_to_buy,  # This is the number of shares to buy
+        "notional": round(allocation, 2),  # This is the number of shares to buy
     }
     response = requests.post(url, json=payload, headers=headers)
-    data = response.json()
-    print(data)
-
-    return data
-
-
-def sell(symbol):  # This function sells a stock
-    url = "https://paper-api.alpaca.markets/v2/orders"
-    qty = get_num_of_shares(symbol)
-
-    if qty <= 0:
-        print(f"No shares available to sell for {symbol}")
+    if response.status_code != 200:
+        print(f"Order failed for {symbol}: {response.text}")
         return None
-
-    payload = {
-        "side": "sell",
-        "type": "market",
-        "time_in_force": "gtc",
-        "symbol": symbol,
-        "qty": str(qty),
-    }
-    response = requests.post(url, json=payload, headers=headers)
     data = response.json()
-    print(data)
-    if response.status_code == 200:
-        print(f"Sold {qty} shares of {symbol} successfully")
-    else:
-        print(f"Failed to sell {symbol}, reason: {data['message']}")
+
     return data
+
+
+#write some tests to see if this works
+def sell(symbol):
+    url = f"https://paper-api.alpaca.markets/v2/positions/{symbol}"
+    r = requests.delete(url, headers=headers)  # liquidates entire position
+    if r.status_code != 200:
+        print(f"Close failed for {symbol}: {r.text}")
+        return None
+    return r.json()
+
+
+
+# def sell(symbol):  # This function sells a stock
+#     url = "https://paper-api.alpaca.markets/v2/orders"
+#     qty = get_num_of_shares(symbol)
+
+#     if qty <= 0:
+#         print(f"No shares available to sell for {symbol}")
+#         return None
+
+#     payload = {
+#         "side": "sell",
+#         "type": "market",
+#         "time_in_force": "gtc",
+#         "symbol": symbol,
+#         "qty": str(qty),
+#     }
+#     response = requests.post(url, json=payload, headers=headers)
+#     data = response.json()
+#     if response.status_code == 200:
+#         print(f"Sold {qty} shares of {symbol} successfully")
+#     else:
+#         print(f"Failed to sell {symbol}, reason: {data['message']}")
+#     return data
 
 
 def get_num_of_shares(symbol):
@@ -85,13 +97,12 @@ def get_num_of_shares(symbol):
 
     response = requests.get(url, headers=headers)
     data = response.json()
-    print(data)
 
     if response.status_code == 200:
         for list in data:
             if list["symbol"] == symbol:
                 # print(f"Symbol: {symbol}, Num of shares: {list['qty']}")
-                return int(float(list["qty"]))
+                return float(list["qty"])
         return 0
     else:
         print(
