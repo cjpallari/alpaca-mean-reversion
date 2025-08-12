@@ -2,6 +2,9 @@
 import pytest
 from unittest.mock import Mock, patch
 import time
+# test_generate_summary.py
+import datetime
+import types
 
 # Import your modules
 import trading_logic as tl
@@ -205,3 +208,80 @@ def test_sell_and_verify_polls_until_closed():
         req_del.assert_called_once_with(f"{acct.BASE_URL}/positions/AAPL", headers=acct.headers)
         # polled until gone (consumed all three side_effects)
         assert req_get.call_count == 3
+
+
+
+
+
+
+class DummyStrategy:
+    """Minimal stand-in to call the same generate_summary implementation.
+    If generate_summary is defined on MeanReversion, use MeanReversion instead.
+    """
+    generate_summary = tl.MeanReversion.generate_summary
+
+
+def test_generate_summary_with_purchases_and_sales(monkeypatch):
+    # Build a fake summary (module-level) with one buy and one sell
+    fake_summary = {
+        "AAPL": {
+            "order_type": "buy",
+            "latest_trade": 188.42,
+            "purchase_time": datetime.datetime(2025, 8, 12, 10, 30, 5),
+        },
+        "MSFT": {
+            "order_type": "sell",
+            "latest_trade": 411.01,
+            "purchase_time": datetime.datetime(2025, 8, 12, 11, 45, 0),
+        },
+    }
+
+    # Capture the tweet text
+    tweeted = {}
+    def fake_tweet(msg: str):
+        tweeted["msg"] = msg
+
+    # Monkeypatch the module-level summary and tweet
+    monkeypatch.setattr(tl, "summary", fake_summary, raising=True)
+    monkeypatch.setattr(tl, "tweet", fake_tweet, raising=True)
+
+    # Call the same method your code uses
+    s = DummyStrategy.__new__(DummyStrategy)  # no init needed
+    DummyStrategy.generate_summary(s)
+
+    # Assert tweet was called once with the expected content
+    assert "Summary of transactions:" in tweeted["msg"]
+    assert "\nPurchases:" in tweeted["msg"]
+    assert "Bought AAPL at: $188.42 order placed at: 2025-08-12 10:30:05" in tweeted["msg"]
+    assert "\nSales:" in tweeted["msg"]
+    assert "Sold MSFT at: $411.01 order placed at: 2025-08-12 11:45:00" in tweeted["msg"]
+
+    # Assert the summary dict was cleared
+    assert tl.summary == {}
+
+
+def test_generate_summary_with_no_activity(monkeypatch):
+    # Start with an empty summary
+    fake_summary = {}
+
+    tweeted = {}
+    def fake_tweet(msg: str):
+        tweeted["msg"] = msg
+
+    monkeypatch.setattr(tl, "summary", fake_summary, raising=True)
+    monkeypatch.setattr(tl, "tweet", fake_tweet, raising=True)
+
+    s = DummyStrategy.__new__(DummyStrategy)
+    DummyStrategy.generate_summary(s)
+
+    # Verify the "no activity" messaging
+    msg = tweeted["msg"]
+    assert "Summary of transactions:" in msg
+    assert "Purchases:" in msg
+    assert "No purchases today" in msg
+    assert "Sales:" in msg
+    assert "No sales today" in msg
+
+    # Still cleared (was already empty)
+    assert tl.summary == {}
+
