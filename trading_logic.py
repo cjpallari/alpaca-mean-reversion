@@ -1,5 +1,6 @@
 import requests
 import statistics
+from zoneinfo import ZoneInfo 
 from spot import *
 from config import *
 from account_stuff import *
@@ -140,8 +141,8 @@ class MeanReversion(TradingStrategy):
 
 
 def main():
-    last_summary_date = None
-    iteration = 0
+    last_summary_date: datetime.date | None = None
+    PT = ZoneInfo("America/Los_Angeles")  # Pacific Time
     strategy = MeanReversion(
         watchlist,
         purchase_info,
@@ -150,21 +151,20 @@ def main():
     )
     while True:
         try:
-            current_time = datetime.datetime.now()
+            now_pt = datetime.datetime.now(tz=PT)
+            today_pt = now_pt.date()
             if is_market_open():
-                print(iteration)
-                iteration += 1
                 strategy.buy_or_sell()
                 time.sleep(120)
             else:
-                if current_time.strftime("%H") >= "16" and (
-                    last_summary_date is None
-                    or current_time.date() != last_summary_date.date()
-                ):
+                after_close = (now_pt.hour > 13) or (now_pt.hour == 13 and now_pt.minute >= 5)
+
+                if after_close and (last_summary_date is None or last_summary_date != today_pt):
                     strategy.generate_summary()
-                    last_summary_date = current_time.date()
-                strategy.buy_or_sell()
-                time.sleep(3600)
+                    last_summary_date = today_pt
+                    time.sleep(3600)
+                    continue
+                time.sleep(300)
         except Exception as e:
             print(f"Error in trading loop: {e}")
             time.sleep(60)  # wait before retrying
