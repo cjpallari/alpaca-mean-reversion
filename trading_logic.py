@@ -158,11 +158,11 @@ def main():
                 strategy.buy_or_sell()
                 time.sleep(120)
             else:
-                strategy.buy_or_sell()
+                # strategy.buy_or_sell()
                 after_close = (now_pt.hour > 13) or (now_pt.hour == 13 and now_pt.minute >= 5)
 
                 if after_close and (last_summary_date is None or last_summary_date != today_pt):
-                    # strategy.generate_summary()
+                    strategy.generate_summary()
                     last_summary_date = today_pt
                     time.sleep(3600)
                     continue

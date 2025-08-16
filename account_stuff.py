@@ -111,22 +111,18 @@ def get_num_of_shares(symbol):
         return 0
 
 
-def is_market_open():
-    now = datetime.datetime.now()
-    ctime = now.strftime("%H:%M:%S")
-    tz_ca = pytz.timezone("America/Los_Angeles")
-    close = (
-        datetime.datetime.now(tz_ca)
-        .replace(hour=13, minute=0, second=0, microsecond=0)
-        .strftime("%H:%M:%S")
-    )
-    open = (
-        datetime.datetime.now(tz_ca)
-        .replace(hour=5, minute=0, second=0, microsecond=0)
-        .strftime("%H:%M:%S")
-    )
 
-    return ctime < close and ctime > open
+PT = pytz.timezone("America/Los_Angeles")
+
+def is_market_open(now=None):
+    if now is None:
+        now = datetime.datetime.now(PT)
+    else:
+        now = now.astimezone(PT)
+
+    open_time  = now.replace(hour=6, minute=30, second=0, microsecond=0)
+    close_time = now.replace(hour=13, minute=0,  second=0, microsecond=0)
+    return open_time <= now <= close_time
 
 
 def main():
