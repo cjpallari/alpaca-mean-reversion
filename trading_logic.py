@@ -66,7 +66,7 @@ class MeanReversion(TradingStrategy):
             ):  # If either the latest trade or the standard deviation is None, skip to the next symbol
                 continue
             if (
-                latest_trade < average - stdev
+                latest_trade < average - (stdev * 2.5)
             ):  # If the latest trade is less than the average minus the standard deviation, buy the stock
                 message = f"Attempting to purchase ${buying_power * .05} of {symbol} at {latest_trade}"
                 if (
@@ -154,13 +154,15 @@ def main():
             now_pt = datetime.datetime.now(tz=PT)
             today_pt = now_pt.date()
             if is_market_open():
+                print("True")
                 strategy.buy_or_sell()
                 time.sleep(120)
             else:
+                strategy.buy_or_sell()
                 after_close = (now_pt.hour > 13) or (now_pt.hour == 13 and now_pt.minute >= 5)
 
                 if after_close and (last_summary_date is None or last_summary_date != today_pt):
-                    strategy.generate_summary()
+                    # strategy.generate_summary()
                     last_summary_date = today_pt
                     time.sleep(3600)
                     continue
