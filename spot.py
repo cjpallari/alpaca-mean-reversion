@@ -2,6 +2,10 @@ from account_stuff import *
 from config import API_KEY, SECRET_KEY
 import pandas as pd
 import datetime
+from zoneinfo import ZoneInfo
+
+PT = ZoneInfo("America/Lost_Angeles")
+
 
 watchlist = {
     # Tech (mature/established)
@@ -77,15 +81,22 @@ watchlist = {
 purchase_info = {}
 summary = {}
 qty = 5
-today = datetime.date.today()
+today = datetime.date.today(tz=PT)
 start_date = today - pd.tseries.offsets.BDay(10)
 start_date = str(start_date)
 # buying_power = float(get_buying_power())
-target_gain = 1.05
+target_gain = 1.08
 
-now = datetime.datetime.now()
-purchase_time = datetime.datetime.now()
+now = datetime.datetime.now(tz=PT)
+purchase_time = datetime.datetime.now(tz=PT)
 min_seconds_between_purchases = 259200
+
+Z_SCORE = 1.5
+MEAN_EXIT_Z = 0.0
+HARD_TP = 1.05
+PANIC_Z = -2.5
+MAX_HOLD_DAYS = 7
+LOOKBACK = 15
 
 headers = {
     "accept": "application/json",

@@ -1,5 +1,3 @@
-import requests
-import statistics
 from zoneinfo import ZoneInfo 
 from spot import *
 from config import *
@@ -9,6 +7,7 @@ from mail import *
 from twit import *
 import time
 import datetime
+from zoneinfo import ZoneInfo
 
 
 
@@ -25,6 +24,7 @@ class TradingStrategy:
         self.target_gain = target_gain
         self.start_date = start_date
         self.api = AlpacaAPI(headers)
+        self.tz = PT
 
     def should_buy(self):
         pass
@@ -49,66 +49,61 @@ class MeanReversion(TradingStrategy):
         )
         self.headers = headers
 
+    def handle_already_purchased(self, symbol, latest_trade):
+        if symbol in self.purchase_info:
+                    print(f"Hold {symbol} at {latest_trade}")
+        else:
+            print(f"Price is not far enough from the mean to buy {symbol}")
+
+    def handle_buy_check(self, symbol, latest_trade):
+        if (symbol not in self.purchase_info or (datetime.datetime.now(tz=self.tz) - self.purchase_info[symbol]["purchase_time"]).total_seconds() > min_seconds_between_purchases):
+            print(f"Buy {symbol} at {latest_trade}")
+            buy(symbol)
+            now = datetime.datetime.now(tz=self.tz)
+            self.purchase_info[symbol] = {
+                "entry_price": latest_trade,
+                "purchase_time": now,
+            }
+            summary[symbol] = {
+                "latest_trade": latest_trade,
+                "purchase_time": now,
+                "order_type": "buy",
+            }
+            print(self.purchase_info)
+        else:
+            print("Not enough time has passed between purchases")
+
+    def handle_symbol_already_in_purchase_list(self, symbol, latest_trade, average, stdev):
+        entry_price = self.purchase_info[symbol]["entry_price"]
+        z = (latest_trade - average)/stdev
+        entry_time = self.purchase_info[symbol]["purchase_time"]
+        holding_period = datetime.datetime.now(tz=self.tz) - entry_time
+        holding_days = holding_period.days
+        if (z >= MEAN_EXIT_Z) or (latest_trade >= entry_price * HARD_TP) or (holding_days >= MAX_HOLD_DAYS) or (z <= PANIC_Z):
+            sell(symbol)
+            exit_time = datetime.datetime.now(tz=self.tz)
+            del self.purchase_info[symbol]
+            summary[symbol] = {
+                "latest_trade": latest_trade,
+                "exit_time": exit_time,
+                "order_type": "sell",
+            }
+
     def buy_or_sell(
         self,
     ):  # This function determines whether to buy or sell a stock based on the average and standard deviation of the closing prices
-        buying_power = get_buying_power()
         for symbol in self.watchlist:
             num_of_shares = get_num_of_shares(symbol)
-            average, stdev = self.api.get_historical_data(
-                symbol
-            )  # Gets the average and standard deviation of the closing prices
-            latest_trade = self.api.get_latest_trade(
-                symbol
-            )  # Gets the price of the latest trade
-            if (
-                latest_trade is None or stdev is None
-            ):  # If either the latest trade or the standard deviation is None, skip to the next symbol
+            average, stdev = self.api.get_historical_data(symbol, lookback=LOOKBACK)  # Gets the average and standard deviation of the closing prices
+            latest_trade = self.api.get_latest_trade(symbol)  # Gets the price of the latest trade
+            if (latest_trade is None) or (stdev is None) or (average is None) or (stdev == 0):  # If either the latest trade or the standard deviation is None, skip to the next symbol
                 continue
-            if (
-                latest_trade < average - (stdev * 2.5)
-            ):  # If the latest trade is less than the average minus the standard deviation, buy the stock
-                message = f"Attempting to purchase ${buying_power * .05} of {symbol} at {latest_trade}"
-                if (
-                    symbol not in self.purchase_info
-                    or (
-                        datetime.datetime.now()
-                        - self.purchase_info[symbol]["purchase_time"]
-                    ).total_seconds()
-                    > min_seconds_between_purchases
-                ):
-                    print(f"Buy {symbol} at {latest_trade}")
-                    buy(symbol)
-                    now = datetime.datetime.now()
-                    self.purchase_info[symbol] = {
-                        "latest_trade": latest_trade,
-                        "purchase_time": now,
-                    }
-                    summary[symbol] = {
-                        "latest_trade": latest_trade,
-                        "purchase_time": now,
-                        "order_type": "buy",
-                    }
-                    print(self.purchase_info)
-                else:
-                    print("Not enough time has passed between purchases")
-
-            elif symbol in self.purchase_info:
-                sell_target = self.purchase_info[symbol]["latest_trade"]
-                if latest_trade > sell_target * self.target_gain:
-                    sell(symbol)
-                    sell_time = datetime.datetime.now()
-                    del self.purchase_info[symbol]
-                    summary[symbol] = {
-                        "latest_trade": latest_trade,
-                        "purchase_time": sell_time,
-                        "order_type": "sell",
-                    }
+            if symbol in self.purchase_info:
+                self.handle_symbol_already_in_purchase_list(symbol, latest_trade, average, stdev)
+            elif (latest_trade < average - (stdev * Z_SCORE)):  # If the latest trade is less than the average minus the standard deviation, buy the stock
+                self.handle_buy_check(symbol, latest_trade)
             else:  # If the latest trade is within the average plus or minus the standard deviation, hold the stock
-                if symbol in self.purchase_info:
-                    print(f"Hold {symbol} at {latest_trade}")
-                else:
-                    print(f"Price is not far enough from the mean to buy {symbol}")
+                self.handle_already_purchased(symbol, latest_trade)
         print(self.purchase_info)
 
     def generate_summary(self):
@@ -131,7 +126,7 @@ class MeanReversion(TradingStrategy):
             for symbol, data in sales:
                 message += (
                     f"Sold {symbol} at: ${data['latest_trade']:.2f} "
-                    f"order placed at: {data['purchase_time'].strftime('%Y-%m-%d %H:%M:%S')}\n"
+                    f"order placed at: {data['exit_time'].strftime('%Y-%m-%d %H:%M:%S')}\n"
                 )
         else:
             message += "No sales today\n"
@@ -154,7 +149,6 @@ def main():
             now_pt = datetime.datetime.now(tz=PT)
             today_pt = now_pt.date()
             if is_market_open():
-                print("True")
                 strategy.buy_or_sell()
                 time.sleep(120)
             else:

@@ -6,6 +6,7 @@ from spot import *
 from config import *
 import datetime
 import pytz
+from zoneinfo import ZoneInfo
 
 BASE_URL = "https://paper-api.alpaca.markets/v2"
 BASE_DATA_URL = "https://data.alpaca.markets/v2"
@@ -110,13 +111,9 @@ def get_num_of_shares(symbol):
         )
         return 0
 
-
-
-PT = pytz.timezone("America/Los_Angeles")
-
 def is_market_open(now=None):
     if now is None:
-        now = datetime.datetime.now(PT)
+        now = datetime.datetime.now(tz=PT)
     else:
         now = now.astimezone(PT)
 
