@@ -24,7 +24,7 @@ class TradingStrategy:
         self.target_gain = target_gain
         self.start_date = start_date
         self.api = AlpacaAPI(headers)
-        self.tz = PT
+        self.tz = ZoneInfo("America/Los_Angeles")
 
     def should_buy(self):
         pass
@@ -137,7 +137,6 @@ class MeanReversion(TradingStrategy):
 
 def main():
     last_summary_date: datetime.date | None = None
-    PT = ZoneInfo("America/Los_Angeles")  # Pacific Time
     strategy = MeanReversion(
         watchlist,
         purchase_info,
@@ -146,7 +145,7 @@ def main():
     )
     while True:
         try:
-            now_pt = datetime.datetime.now(tz=PT)
+            now_pt = datetime.datetime.now(tz=strategy.tz)
             today_pt = now_pt.date()
             if is_market_open():
                 strategy.buy_or_sell()
@@ -171,4 +170,5 @@ if __name__ == "__main__":
         main()
     except KeyboardInterrupt:
         print(" Exiting...")
+
         exit()
