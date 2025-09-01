@@ -4,8 +4,6 @@ import pandas as pd
 import datetime
 from zoneinfo import ZoneInfo
 
-PT = ZoneInfo("America/Los_Angeles")
-
 
 watchlist = {
     # Tech (mature/established)
@@ -87,8 +85,8 @@ start_date = str(start_date)
 # buying_power = float(get_buying_power())
 target_gain = 1.08
 
-now = datetime.datetime.now(tz=PT)
-purchase_time = datetime.datetime.now(tz=PT)
+now = datetime.datetime.now(tz=ZoneInfo("America/Los_Angeles"))
+purchase_time = datetime.datetime.now(tz=ZoneInfo("America/Los_Angeles"))
 min_seconds_between_purchases = 259200
 
 Z_SCORE = 1.5
@@ -103,4 +101,5 @@ headers = {
     "APCA-API-KEY-ID": API_KEY,
     "APCA-API-SECRET-KEY": SECRET_KEY,
 }
+
 
