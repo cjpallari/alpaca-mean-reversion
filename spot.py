@@ -4,7 +4,7 @@ import pandas as pd
 import datetime
 from zoneinfo import ZoneInfo
 
-PT = ZoneInfo("America/Lost_Angeles")
+PT = ZoneInfo("America/Los_Angeles")
 
 
 watchlist = {
@@ -81,7 +81,7 @@ watchlist = {
 purchase_info = {}
 summary = {}
 qty = 5
-today = datetime.date.today(tz=PT)
+today = datetime.datetime.now(ZoneInfo("America/Los_Angeles")).date()
 start_date = today - pd.tseries.offsets.BDay(10)
 start_date = str(start_date)
 # buying_power = float(get_buying_power())
@@ -103,3 +103,4 @@ headers = {
     "APCA-API-KEY-ID": API_KEY,
     "APCA-API-SECRET-KEY": SECRET_KEY,
 }
+
