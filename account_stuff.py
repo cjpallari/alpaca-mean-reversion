@@ -113,9 +113,9 @@ def get_num_of_shares(symbol):
 
 def is_market_open(now=None):
     if now is None:
-        now = datetime.datetime.now(tz=PT)
+        now = datetime.datetime.now(tz=ZoneInfo("America/Los_Angeles"))
     else:
-        now = now.astimezone(PT)
+        now = now.astimezone(ZoneInfo("America/Los_Angeles"))
 
     open_time  = now.replace(hour=6, minute=30, second=0, microsecond=0)
     close_time = now.replace(hour=13, minute=0,  second=0, microsecond=0)
@@ -128,3 +128,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
