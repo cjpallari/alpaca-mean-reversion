@@ -3,6 +3,8 @@ from config import API_KEY, SECRET_KEY
 import pandas as pd
 import datetime
 from zoneinfo import ZoneInfo
+import logging
+from pathlib import Path
 
 
 watchlist = {
@@ -88,6 +90,16 @@ target_gain = 1.08
 now = datetime.datetime.now(tz=ZoneInfo("America/Los_Angeles"))
 purchase_time = datetime.datetime.now(tz=ZoneInfo("America/Los_Angeles"))
 min_seconds_between_purchases = 259200
+
+log_path = Path("alpaca-mean-reversion/app.log")
+log_path.parent.mkdir(parents=True, exist_ok=True)
+file_handler = logging.FileHandler(log_path, mode='a', encoding='utf-8', delay=True)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s]",
+    datefmt="%Y-%m-%d %H:%M:%S",
+    handlers=[file_handler]
+)
 
 Z_SCORE = 1.5
 MEAN_EXIT_Z = 0.0

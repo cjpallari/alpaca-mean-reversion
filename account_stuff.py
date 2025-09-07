@@ -5,8 +5,8 @@ from alpaca_api import AlpacaAPI
 from spot import *
 from config import *
 import datetime
-import pytz
 from zoneinfo import ZoneInfo
+import logging
 
 BASE_URL = "https://paper-api.alpaca.markets/v2"
 BASE_DATA_URL = "https://data.alpaca.markets/v2"
@@ -33,13 +33,13 @@ def buy(symbol):  # This function buys a stock
     latest_trade = alpaca.get_latest_trade(symbol)
 
     if latest_trade is None or latest_trade <= 0:
-        print(f"Invalid trade price for {symbol}: {latest_trade}")
+        logging.error(f"Could not retrieve price for {symbol}")
         return
 
     shares_to_buy = round((allocation / latest_trade), 6)
 
     if shares_to_buy < 0.0001:
-        print("Out of funds")
+        logging.critical("Out of funds")
         return
 
     payload = {
@@ -51,7 +51,7 @@ def buy(symbol):  # This function buys a stock
     }
     response = requests.post(url, json=payload, headers=headers)
     if response.status_code != 200:
-        print(f"Order failed for {symbol}: {response.text}")
+        logging.errro(f"Order failed for {symbol}: {response.text}")
         return None
     data = response.json()
 
@@ -63,7 +63,7 @@ def sell(symbol):
     url = f"https://paper-api.alpaca.markets/v2/positions/{symbol}"
     r = requests.delete(url, headers=headers)  # liquidates entire position
     if r.status_code != 200:
-        print(f"Close failed for {symbol}: {r.text}")
+        logging.error(f"Sell failed for {symbol}: {r.text}")
         return None
     return r.json()
 
@@ -106,9 +106,7 @@ def get_num_of_shares(symbol):
                 return float(list["qty"])
         return 0
     else:
-        print(
-            f"Failed to retrieve number of shares for {symbol}, reason: {data['message']}"
-        )
+        logging.error(f"Failed to retrieve number of shares for {symbol}: {data['message']}")
         return 0
 
 def is_market_open(now=None):

@@ -8,6 +8,7 @@ from twit import *
 import time
 import datetime
 from zoneinfo import ZoneInfo
+import logging
 
 
 
@@ -52,13 +53,14 @@ class MeanReversion(TradingStrategy):
     def handle_already_purchased(self, symbol, latest_trade):
         if symbol in self.purchase_info:
                     print(f"Hold {symbol} at {latest_trade}")
+                    logging.info("Holding {s}")
         else:
             print(f"Price is not far enough from the mean to buy {symbol}")
 
     def handle_buy_check(self, symbol, latest_trade):
         if (symbol not in self.purchase_info or (datetime.datetime.now(tz=self.tz) - self.purchase_info[symbol]["purchase_time"]).total_seconds() > min_seconds_between_purchases):
-            print(f"Buy {symbol} at {latest_trade}")
             buy(symbol)
+            logging.info(f"{symbol} purchased at {latest_trade}")
             now = datetime.datetime.now(tz=self.tz)
             self.purchase_info[symbol] = {
                 "entry_price": latest_trade,
@@ -69,11 +71,10 @@ class MeanReversion(TradingStrategy):
                 "purchase_time": now,
                 "order_type": "buy",
             }
-            print(self.purchase_info)
         else:
-            print("Not enough time has passed between purchases")
+            logging.info(f"Buy order of {symbol} was attempted, but not enough time has passed since the last purchase of {symbol}")
 
-    def handle_symbol_already_in_purchase_list(self, symbol, latest_trade, average, stdev):
+    def handle_sell_check(self, symbol, latest_trade, average, stdev):
         entry_price = self.purchase_info[symbol]["entry_price"]
         z = (latest_trade - average)/stdev
         entry_time = self.purchase_info[symbol]["purchase_time"]
@@ -81,6 +82,7 @@ class MeanReversion(TradingStrategy):
         holding_days = holding_period.days
         if (z >= MEAN_EXIT_Z) or (latest_trade >= entry_price * HARD_TP) or (holding_days >= MAX_HOLD_DAYS) or (z <= PANIC_Z):
             sell(symbol)
+            logging.info(f"{symbol} sell order completed")
             exit_time = datetime.datetime.now(tz=self.tz)
             del self.purchase_info[symbol]
             summary[symbol] = {
@@ -92,19 +94,20 @@ class MeanReversion(TradingStrategy):
     def buy_or_sell(
         self,
     ):  # This function determines whether to buy or sell a stock based on the average and standard deviation of the closing prices
+        i = 0
         for symbol in self.watchlist:
-            num_of_shares = get_num_of_shares(symbol)
             average, stdev = self.api.get_historical_data(symbol, lookback=LOOKBACK)  # Gets the average and standard deviation of the closing prices
             latest_trade = self.api.get_latest_trade(symbol)  # Gets the price of the latest trade
             if (latest_trade is None) or (stdev is None) or (average is None) or (stdev == 0):  # If either the latest trade or the standard deviation is None, skip to the next symbol
                 continue
             if symbol in self.purchase_info:
-                self.handle_symbol_already_in_purchase_list(symbol, latest_trade, average, stdev)
+                self.handle_sell_check(symbol, latest_trade, average, stdev)
             elif (latest_trade < average - (stdev * Z_SCORE)):  # If the latest trade is less than the average minus the standard deviation, buy the stock
                 self.handle_buy_check(symbol, latest_trade)
             else:  # If the latest trade is within the average plus or minus the standard deviation, hold the stock
                 self.handle_already_purchased(symbol, latest_trade)
-        print(self.purchase_info)
+        logging.info(f"Successfully looped through watchlist. Iteration: {i}")
+        i += 1
 
     def generate_summary(self):
         message = "Summary of transactions: \n"
@@ -161,7 +164,7 @@ def main():
                     continue
                 time.sleep(300)
         except Exception as e:
-            print(f"Error in trading loop: {e}")
+            logging.error(f"Error in trading loop: {e}")
             time.sleep(60)  # wait before retrying
 
 
