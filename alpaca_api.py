@@ -1,5 +1,7 @@
 import requests
 import statistics
+from datetime import *
+
 
 # eth, doge, sq, dotusd,
 class AlpacaAPI:
@@ -33,17 +35,17 @@ class AlpacaAPI:
                 f"Failed to fetch latest trade data for {symbol}. Status code: {response.status_code}"
             )
             return None
-        
 
     def get_historical_data(self, symbol, lookback=20):
-        url = "https://data.alpaca.markets/v2/stocks/bars"
+        url = f"https://data.alpaca.markets/v2/stocks/{symbol}/bars"
+        start = (datetime.now(timezone.utc) - timedelta(days=lookback * 3)).isoformat()
         params = {
-            "symbols": symbol,
-            "timeframe": "1Day",     # note the capital D
-            "limit": lookback,       # last N trading-day bars
+            "timeframe": "1Day",  # note the capital D
+            "start": start,
             "adjustment": "raw",
             "feed": "iex",
-            "sort": "desc",          # newest first
+            "sort": "desc",  # newest first
+            "limit": lookback,
         }
         r = requests.get(url, headers=self.headers, params=params)
         if r.status_code != 200:
@@ -51,41 +53,15 @@ class AlpacaAPI:
             return None, None
 
         data = r.json()
-        bars = data.get("bars", {}).get(symbol, [])
-        closes = [b["c"] for b in bars]
+        bars = data.get("bars", [])
+        if not isinstance(bars, list):
+            print(f"Unexpected bars type for {symbol}: {type(bars)}; payload={data}")
+        closes = [b.get("c") for b in bars if isinstance(b, dict) and "c" in b]
 
         if len(closes) < 2:
+            print(f"No/insufficient bars for {symbol}. Response: {data}")
             return None, None
 
         avg = sum(closes) / len(closes)
-        sd  = statistics.stdev(closes)
+        sd = statistics.stdev(closes)
         return avg, sd
-
-
-    # def get_historical_data(self, symbol):
-    #     url = f"https://data.alpaca.markets/v2/stocks/bars?symbols={symbol}&timeframe=1day&start={start_date}T00%3A00%3A00Z&limit=1000&adjustment=raw&feed=iex&sort=asc"
-    #     response = requests.get(url, headers=self.headers)
-
-    #     if response.status_code == 200:  # If the request is successful
-    #         data = response.json()
-    #         bars_data = data.get("bars", {}).get(symbol, [])
-
-    #         if bars_data:
-    #             closing_prices = [
-    #                 bar["c"] for bar in bars_data
-    #             ]  # Gets closing price from the api response
-    #             average = sum(closing_prices) / len(
-    #                 closing_prices
-    #             )  # Calculates average of closing prices from the last 7 days
-    #             stdev = (
-    #                 statistics.stdev(closing_prices) * 2.5
-    #             )  # Calculates standard deviation and multiplies by 1.5 - this is the threshold for buying or selling
-    #             return average, stdev
-    #         else:  # If no data is found for the symbol
-    #             print(f"No historical data found for {symbol}")
-    #             return None, None
-    #     else:  # If the request fails
-    #         print(
-    #             f"Failed to fetch historical data for {symbol}. Status code: {response.status_code}"
-    #         )
-    #         return None, None
