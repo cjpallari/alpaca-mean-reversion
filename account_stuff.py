@@ -9,8 +9,9 @@ from zoneinfo import ZoneInfo
 import logging
 
 BASE_URL = "https://paper-api.alpaca.markets/v2"
+BASE_REAL_URL = "https://api.alpaca.markets/v2"
 BASE_DATA_URL = "https://data.alpaca.markets/v2"
-ACCOUNT_URL = "{}/account".format(BASE_URL)
+ACCOUNT_URL = "{}/account".format(BASE_REAL_URL)
 TRADE_PRICE_URL_PATTERN = f"{BASE_DATA_URL}/stocks/{{symbol}}/trades"
 headers = {
     "accept": "application/json",
@@ -27,7 +28,8 @@ def get_buying_power():
 
 def buy(symbol):  # This function buys a stock
     alpaca = AlpacaAPI(headers=headers)
-    url = "https://paper-api.alpaca.markets/v2/orders"
+    # url = "https://paper-api.alpaca.markets/v2/orders"
+    url = BASE_REAL_URL + "/orders"
     buying_power = get_buying_power()
     allocation = buying_power * 0.05
     latest_trade = alpaca.get_latest_trade(symbol)
@@ -51,22 +53,22 @@ def buy(symbol):  # This function buys a stock
     }
     response = requests.post(url, json=payload, headers=headers)
     if response.status_code != 200:
-        logging.errro(f"Order failed for {symbol}: {response.text}")
+        logging.error(f"Order failed for {symbol}: {response.text}")
         return None
     data = response.json()
 
     return data
 
 
-#write some tests to see if this works
+# write some tests to see if this works
 def sell(symbol):
-    url = f"https://paper-api.alpaca.markets/v2/positions/{symbol}"
-    r = requests.delete(url, headers=headers)  # liquidates entire position
+    # paper_url = f"https://paper-api.alpaca.markets/v2/positions/{symbol}"
+    real_url = BASE_REAL_URL + f"/positions/{symbol}"
+    r = requests.delete(real_url, headers=headers)  # liquidates entire position
     if r.status_code != 200:
         logging.error(f"Sell failed for {symbol}: {r.text}")
         return None
     return r.json()
-
 
 
 # def sell(symbol):  # This function sells a stock
@@ -94,7 +96,8 @@ def sell(symbol):
 
 
 def get_num_of_shares(symbol):
-    url = "https://paper-api.alpaca.markets/v2/positions"
+    # url = "https://paper-api.alpaca.markets/v2/positions"
+    url = BASE_REAL_URL + "/positions"
 
     response = requests.get(url, headers=headers)
     data = response.json()
@@ -106,8 +109,11 @@ def get_num_of_shares(symbol):
                 return float(list["qty"])
         return 0
     else:
-        logging.error(f"Failed to retrieve number of shares for {symbol}: {data['message']}")
+        logging.error(
+            f"Failed to retrieve number of shares for {symbol}: {data['message']}"
+        )
         return 0
+
 
 def is_market_open(now=None):
     if now is None:
@@ -115,8 +121,8 @@ def is_market_open(now=None):
     else:
         now = now.astimezone(ZoneInfo("America/Los_Angeles"))
 
-    open_time  = now.replace(hour=6, minute=30, second=0, microsecond=0)
-    close_time = now.replace(hour=13, minute=0,  second=0, microsecond=0)
+    open_time = now.replace(hour=6, minute=30, second=0, microsecond=0)
+    close_time = now.replace(hour=13, minute=0, second=0, microsecond=0)
     return open_time <= now <= close_time
 
 
@@ -126,4 +132,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
