@@ -167,10 +167,10 @@ class MeanReversion(TradingStrategy):
         sales = [t for t in summary.items() if t[1]["order_type"] == "sell"]
         if sales:
             for symbol, data in sales:
-                message += (
-                    f"Sold {symbol} at: ${data['latest_trade']:.2f} "
-                    f"order placed at: {data['exit_time'].strftime('%Y-%m-%d %H:%M:%S')}\n"
-                )
+                ts = data.get("exit_time")
+                ts_str = ts.strftime("%Y-%m-%d %H:%M:%S") if ts else "N/A"
+                price = data.get("latest_trade", 0)
+                message += f"Sold {symbol} at: ${price:.2f} order placed at: {ts_str}\n"
         else:
             message += "No sales today\n"
 
