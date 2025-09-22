@@ -11,10 +11,10 @@ from urllib.parse import quote
 from spot import ORDERS_URL
 from spot import POSITIONS_URL
 
-BASE_URL = "https://paper-api.alpaca.markets/v2"
-BASE_REAL_URL = "https://api.alpaca.markets/v2"
+# BASE_URL = "https://paper-api.alpaca.markets/v2"
+# BASE_REAL_URL = "https://api.alpaca.markets/v2"
 BASE_DATA_URL = "https://data.alpaca.markets/v2"
-ACCOUNT_URL = "{}/account".format(BASE_REAL_URL)
+# ACCOUNT_URL = "{}/account".format(BASE_REAL_URL)
 # TRADE_PRICE_URL_PATTERN = f"{BASE_DATA_URL}/stocks/{{symbol}}/trades"
 headers = {
     "accept": "application/json",
@@ -32,7 +32,6 @@ def get_buying_power():
 def buy(symbol):  # This function buys a stock
     alpaca = AlpacaAPI(headers=headers)
     # url = "https://paper-api.alpaca.markets/v2/orders"
-    url = BASE_REAL_URL + "/orders"
     buying_power = get_buying_power()
     allocation = buying_power * 0.30
     latest_trade = alpaca.get_latest_trade(symbol)
@@ -78,7 +77,6 @@ def sell(symbol):
 
 def get_num_of_shares(symbol):
     # url = "https://paper-api.alpaca.markets/v2/positions"
-    url = BASE_REAL_URL + "/positions"
 
     response = requests.get(POSITIONS_URL, headers=headers)
     data = response.json()

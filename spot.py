@@ -96,7 +96,7 @@ watchlist = {
     "YFI/USD",
 }
 
-USE_PAPER = True  # tests expect paper
+USE_PAPER = False  # tests expect paper
 
 ACTIVE_BASE = (
     "https://paper-api.alpaca.markets/v2"
