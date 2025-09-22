@@ -75,13 +75,15 @@ class AlpacaAPI:
 
     def get_historical_data(self, symbol, lookback=20, timeframe="1Day", timeout=15):
         crypto = "/" in symbol
+        start = (datetime.now(timezone.utc) - timedelta(days=lookback * 3)) \
+                .isoformat().replace("+00:00", "Z")
 
         if crypto:
             url = f"{self.DATA_BASE}/v1beta3/crypto/us/bars"
-            params = {"symbols": symbol, "timeframe": timeframe, "limit": lookback}
+            params = {"symbols": symbol, "timeframe": timeframe, "limit": lookback, "start": start}
         else:
             url = f"{self.DATA_BASE}/v2/stocks/{symbol}/bars"
-            params = {"timeframe": timeframe, "limit": lookback}
+            params = {"timeframe": timeframe, "limit": lookback, "start": start}
 
         r = requests.get(url, headers=self.headers, params=params, timeout=timeout)
         try:

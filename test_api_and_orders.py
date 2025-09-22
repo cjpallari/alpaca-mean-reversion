@@ -285,3 +285,80 @@ def test_generate_summary_with_no_activity(monkeypatch):
     # Still cleared (was already empty)
     assert tl.summary == {}
 
+
+# test_alpaca_api_bars.py
+from unittest.mock import Mock, patch
+from alpaca_api import AlpacaAPI
+
+# ---- 1) ensures we pass `start` and use the crypto v1beta3 endpoint ----
+def test_get_historical_data_sends_start_param_and_uses_crypto_endpoint():
+    symbol = "BTC/USD"
+    mock_resp = Mock()
+    mock_resp.status_code = 200
+    mock_resp.json.return_value = {
+        "bars": {
+            symbol: [
+                {"t": "2025-09-19T19:30:00Z", "c": 64000.0},
+                {"t": "2025-09-19T19:31:00Z", "c": 64100.0},
+            ]
+        }
+    }
+
+    with patch("alpaca_api.requests.get", return_value=mock_resp) as mock_get:
+        api = AlpacaAPI(headers={})
+        avg, sd = api.get_historical_data(symbol, lookback=2, timeframe="1Min")
+
+        # called once with the crypto bars endpoint
+        assert mock_get.call_count == 1
+        called_url = mock_get.call_args[0][0]
+        called_kwargs = mock_get.call_args[1]
+        assert called_url.endswith("/v1beta3/crypto/us/bars")
+
+        # verify `start` is present in params and looks like an ISO-8601 string
+        params = called_kwargs["params"]
+        assert "start" in params and isinstance(params["start"], str)
+        assert params["symbols"] == symbol
+        assert params["timeframe"] == "1Min"
+        assert params["limit"] == 2
+
+        # sanity: still computes outputs
+        assert round(avg, 2) == 64050.00
+        # stdev of [64000, 64100] is 70.71...
+        assert round(sd, 2) == 70.71
+
+# ---- 2) computes avg/stdev over last `lookback` closes (multiple bars) ----
+def test_get_historical_data_avg_sd_multiple_bars():
+    symbol = "BTC/USD"
+    mock_resp = Mock()
+    mock_resp.status_code = 200
+    mock_resp.json.return_value = {
+        "bars": {
+            symbol: [
+                {"t": "2025-09-19T19:30:00Z", "c": 64000.0},
+                {"t": "2025-09-19T19:31:00Z", "c": 64100.0},
+                {"t": "2025-09-19T19:32:00Z", "c": 63900.0},
+            ]
+        }
+    }
+
+    with patch("alpaca_api.requests.get", return_value=mock_resp):
+        api = AlpacaAPI(headers={})
+        avg, sd = api.get_historical_data(symbol, lookback=3, timeframe="1Min")
+
+        # average of [64000, 64100, 63900] = 64000
+        assert round(avg, 2) == 64000.00
+        # sample stdev across all 3 values => 100.0
+        assert round(sd, 2) == 100.00
+
+# ---- 3) returns (None, None) when fewer than 2 bars are returned ----
+def test_get_historical_data_insufficient_bars_returns_none():
+    symbol = "BTC/USD"
+    mock_resp = Mock()
+    mock_resp.status_code = 200
+    mock_resp.json.return_value = {"bars": {symbol: [{"t": "2025-09-22T00:00:00Z", "c": 64000.0}]}}  # only one bar
+
+    with patch("alpaca_api.requests.get", return_value=mock_resp):
+        api = AlpacaAPI(headers={})
+        avg, sd = api.get_historical_data(symbol, lookback=3, timeframe="1Min")
+        assert avg is None and sd is None
+
