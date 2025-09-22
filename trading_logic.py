@@ -194,7 +194,7 @@ def main():
                 strategy.buy_or_sell()
                 time.sleep(120)
             else:
-                # strategy.buy_or_sell()
+                strategy.buy_or_sell()
                 after_close = (now_pt.hour > 13) or (
                     now_pt.hour == 13 and now_pt.minute >= 5
                 )
@@ -204,9 +204,7 @@ def main():
                 ):
                     strategy.generate_summary()
                     last_summary_date = today_pt
-                    time.sleep(3600)
-                    continue
-                time.sleep(300)
+                time.sleep(120)
         except Exception as e:
             logging.error(f"Error in trading loop: {e}")
             time.sleep(60)  # wait before retrying
