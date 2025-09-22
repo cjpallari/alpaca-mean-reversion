@@ -14,6 +14,8 @@ import datetime
 from zoneinfo import ZoneInfo
 import logging
 
+from twit import tweet
+
 
 class TradingStrategy:
 
@@ -172,7 +174,7 @@ class MeanReversion(TradingStrategy):
         else:
             message += "No sales today\n"
 
-        # tweet(message)
+        tweet(message)
         summary.clear()
 
 
