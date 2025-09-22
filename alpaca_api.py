@@ -104,7 +104,8 @@ class AlpacaAPI:
             logging.error(f"No/insufficient bars for {symbol}. Response: {data}")
             return None, None
 
-        bars_list.sort(key=lambda b: b.get("t"))
+        if any(isinstance(b, dict) and "t" in b for b in bars_list):
+            bars_list.sort(key=lambda b: b.get("t") or "")
         closes = [b["c"] for b in bars_list if isinstance(b, dict) and "c" in b][
             -lookback:
         ]

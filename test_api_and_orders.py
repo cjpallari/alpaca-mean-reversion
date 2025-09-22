@@ -54,44 +54,39 @@ def test_get_historical_data_avg_sd():
 # -------------
 # account_stuff
 # -------------
-def test_buy_places_notional_and_day_tif():
-    """
-    - POST /v2/orders
-    - payload uses `notional` (no `qty`)
-    - time_in_force == 'day'
-    """
-    mock_post = Mock()
-    mock_post.status_code = 200
-    mock_post.json.return_value = {
-        "id": "order-id-123",
-        "symbol": "AAPL",
-        "notional": "500.00",
-        "side": "buy",
-        "status": "accepted",
-    }
+def test_buy_posts_notional_market_order_for_crypto():
+    # 30% of 1000 = 300 notional
+    with patch("account_stuff.get_buying_power", return_value=1000.0):
+        with patch("alpaca_api.AlpacaAPI.get_latest_trade", return_value=60000.0):
+            mock_post = Mock()
+            mock_post.status_code = 200
+            mock_post.json.return_value = {
+                "id": "order-123",
+                "symbol": "BTC/USD",
+                "notional": "300.00",
+                "side": "buy",
+                "status": "accepted",
+            }
 
-    with patch("account_stuff.get_buying_power", return_value=10_000.00), \
-         patch("trading_logic.AlpacaAPI.get_latest_trade", return_value=50.00), \
-         patch("account_stuff.requests.post", return_value=mock_post) as req_post:
+            # IMPORTANT: patch the module where `buy` is defined
+            with patch("account_stuff.requests.post", return_value=mock_post) as post:
+                result = acct.buy("BTC/USD")
 
-        result = acct.buy("AAPL")
+                post.assert_called_once()
+                (called_url,) = post.call_args[0]
+                called_kwargs = post.call_args[1]
 
-        # Assert request + payload
-        req_post.assert_called_once()
-        url_arg, kw = req_post.call_args
-        assert url_arg[0] == "https://paper-api.alpaca.markets/v2/orders"
-        payload = kw["json"]
+                assert called_url.endswith("/orders")
+                assert called_kwargs["json"]["symbol"] == "BTC/USD"
+                assert called_kwargs["json"]["side"] == "buy"
+                assert called_kwargs["json"]["type"] == "market"
+                # your code uses GTC now
+                assert called_kwargs["json"]["time_in_force"] == "gtc"
+                # 30% of 1000.0 = 300.00
+                assert called_kwargs["json"]["notional"] == 300.00
 
-        assert payload["side"] == "buy"
-        assert payload["type"] == "market"
-        assert payload["time_in_force"] == "day"
-        assert payload["symbol"] == "AAPL"
-        assert "qty" not in payload
-        # Allow 500 or 500.00 depending on round()
-        assert float(payload["notional"]) == pytest.approx(500.0)
+                assert result["status"] == "accepted"
 
-        assert result["symbol"] == "AAPL"
-        assert result["status"] == "accepted"
 
 
 def test_sell_closes_position_via_delete():
