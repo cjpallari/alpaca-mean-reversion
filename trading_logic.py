@@ -1,4 +1,7 @@
 from zoneinfo import ZoneInfo
+
+import requests
+from account_stuff import BASE_REAL_URL, is_market_open
 from spot import *
 from config import *
 from account_stuff import *
@@ -13,6 +16,7 @@ import logging
 
 
 class TradingStrategy:
+
     def __init__(
         self,
         watchlist,
@@ -172,33 +176,7 @@ class MeanReversion(TradingStrategy):
         summary.clear()
 
 
-def sanity_check():
-    # 1) account health
-    r = requests.get(BASE_REAL_URL + "/account", headers=headers)
-    if r.status_code != 200:
-        raise RuntimeError(f"/account failed: {r.status_code} {r.text}")
-    acct = r.json()
-    logging.info(
-        f"Acct status={acct.get('status')} "
-        f"blocked={acct.get('trading_blocked')} "
-        f"cash={acct.get('cash')} "
-        f"bp={acct.get('buying_power')} "
-        f"type={acct.get('account_type')}"
-    )
-    if acct.get("trading_blocked"):
-        raise RuntimeError("Account is trading_blocked")
-
-    # 2) tiny data sanity
-    # pick a liquid symbol you *won’t* trade, e.g. AAPL
-    from alpaca_api import AlpacaAPI
-
-    p = AlpacaAPI(headers=headers).get_latest_trade("AAPL")
-    if not p or p <= 0:
-        raise RuntimeError("Data feed sanity failed for AAPL")
-
-
 def main():
-    sanity_check()
     last_summary_date: datetime.date | None = None
     strategy = MeanReversion(
         watchlist,
