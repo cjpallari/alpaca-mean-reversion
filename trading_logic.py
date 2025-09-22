@@ -1,7 +1,7 @@
 from zoneinfo import ZoneInfo
 
-import requests
-from account_stuff import BASE_REAL_URL, is_market_open
+from account_stuff import is_market_open
+from spot import ACCOUNT_URL, ORDERS_URL, POSITIONS_URL
 from spot import *
 from config import *
 from account_stuff import *
