@@ -90,8 +90,6 @@ watchlist = {
     "DOT/USD",
     "GRT/USD",
     "SUSHI/USD",
-    "USDC/USD",
-    "USDT/USD",
     "XTZ/USD",
     "YFI/USD",
 }
